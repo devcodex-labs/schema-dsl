@@ -143,7 +143,7 @@ export function compileValidationPlan(
     return { status: 'unsupported', reason: 'validator-option' }
   }
 
-  const result = compilePlanNode(schema, new WeakSet<object>(), context.customValidators ?? 'sync')
+  const result = compilePlanNode(schema, new WeakSet<object>(), context.customValidators ?? 'sync', context.ajvOptions?.['unicodeRegExp'] !== false)
   if (result.status === 'unsupported') return result
 
   return {
@@ -173,7 +173,8 @@ type CompileNodeResult =
 function compilePlanNode(
   schema: JSONSchemaInput,
   seen: WeakSet<object>,
-  customValidatorMode: 'sync' | 'ignore'
+  customValidatorMode: 'sync' | 'ignore',
+  unicodeRegExp: boolean
 ): CompileNodeResult {
   if (schema === true) return { status: 'compiled', node: { kind: 'always' } }
   if (schema === false) return { status: 'unsupported', reason: 'unsupported-schema' }
@@ -189,7 +190,7 @@ function compilePlanNode(
   }
 
   if (Array.isArray(source['anyOf']) || Array.isArray(source['oneOf'])) {
-    return compileUnionPlan(source, seen, customValidatorMode)
+    return compileUnionPlan(source, seen, customValidatorMode, unicodeRegExp)
   }
 
   const typeValue = source['type']
@@ -197,20 +198,25 @@ function compilePlanNode(
   if (typeValue !== undefined && !types) return { status: 'unsupported', reason: 'unsupported-type' }
 
   if (types?.includes('array')) {
-    return compileArrayPlan(source, seen, customValidatorMode)
+    return compileArrayPlan(source, seen, customValidatorMode, unicodeRegExp)
   }
   if (types?.includes('object')) {
-    return compileObjectPlan(source, seen, customValidatorMode)
+    return compileObjectPlan(source, seen, customValidatorMode, unicodeRegExp)
   }
 
-  return compileScalarPlan(source, types as PrimitiveType[] | null, customValidatorMode)
+  return compileScalarPlan(source, types as PrimitiveType[] | null, customValidatorMode, unicodeRegExp)
 }
 
 function compileUnionPlan(
   source: Record<string, unknown>,
   seen: WeakSet<object>,
-  customValidatorMode: 'sync' | 'ignore'
+  customValidatorMode: 'sync' | 'ignore',
+  unicodeRegExp: boolean
 ): CompileNodeResult {
+  // 两个组合关键词是合取关系，单个 union 节点无法完整表示。
+  if (source['anyOf'] !== undefined && source['oneOf'] !== undefined) {
+    return { status: 'unsupported', reason: 'unsupported-keyword' }
+  }
   const mode = Array.isArray(source['anyOf']) ? 'anyOf' : 'oneOf'
   const allowed = new Set([...UNION_KEYS, ...ANNOTATION_KEYS])
   if (findUnsupportedKeyword(source, allowed)) {
@@ -224,7 +230,7 @@ function compileUnionPlan(
 
   const branchPlans: ValidationPlanNode[] = []
   for (const branch of branches) {
-    const result = compilePlanNode(branch as JSONSchemaInput, seen, customValidatorMode)
+    const result = compilePlanNode(branch as JSONSchemaInput, seen, customValidatorMode, unicodeRegExp)
     if (result.status === 'unsupported') return result
     branchPlans.push(result.node)
   }
@@ -240,7 +246,8 @@ function compileUnionPlan(
 function compileArrayPlan(
   source: Record<string, unknown>,
   seen: WeakSet<object>,
-  customValidatorMode: 'sync' | 'ignore'
+  customValidatorMode: 'sync' | 'ignore',
+  unicodeRegExp: boolean
 ): CompileNodeResult {
   const allowed = new Set([...ARRAY_KEYS, ...ANNOTATION_KEYS])
   if (findUnsupportedKeyword(source, allowed)) {
@@ -256,7 +263,7 @@ function compileArrayPlan(
 
   const item = itemSchema === undefined
     ? null
-    : compilePlanNode(itemSchema as JSONSchemaInput, seen, customValidatorMode)
+    : compilePlanNode(itemSchema as JSONSchemaInput, seen, customValidatorMode, unicodeRegExp)
   if (item && item.status === 'unsupported') return item
 
   return {
@@ -273,7 +280,8 @@ function compileArrayPlan(
 function compileObjectPlan(
   source: Record<string, unknown>,
   seen: WeakSet<object>,
-  customValidatorMode: 'sync' | 'ignore'
+  customValidatorMode: 'sync' | 'ignore',
+  unicodeRegExp: boolean
 ): CompileNodeResult {
   const allowed = new Set([...OBJECT_KEYS, ...ANNOTATION_KEYS])
   if (findUnsupportedKeyword(source, allowed)) {
@@ -293,7 +301,7 @@ function compileObjectPlan(
   const properties: Array<[string, ValidationPlanNode]> = []
   if (propertiesValue && typeof propertiesValue === 'object' && !Array.isArray(propertiesValue)) {
     for (const [key, childSchema] of Object.entries(propertiesValue as Record<string, JSONSchemaInput>)) {
-      const child = compilePlanNode(childSchema, seen, customValidatorMode)
+      const child = compilePlanNode(childSchema, seen, customValidatorMode, unicodeRegExp)
       if (child.status === 'unsupported') return child
       properties.push([key, child.node])
     }
@@ -312,7 +320,8 @@ function compileObjectPlan(
 function compileScalarPlan(
   source: Record<string, unknown>,
   types: PrimitiveType[] | null,
-  customValidatorMode: 'sync' | 'ignore'
+  customValidatorMode: 'sync' | 'ignore',
+  unicodeRegExp: boolean
 ): CompileNodeResult {
   const allowed = new Set([...SCALAR_KEYS, ...ANNOTATION_KEYS])
   if (findUnsupportedKeyword(source, allowed)) {
@@ -343,7 +352,7 @@ function compileScalarPlan(
   if (source['pattern'] !== undefined) {
     if (typeof source['pattern'] !== 'string') return { status: 'unsupported', reason: 'unsupported-schema' }
     try {
-      pattern = new RegExp(source['pattern'])
+      pattern = new RegExp(source['pattern'], unicodeRegExp ? 'u' : '')
     } catch {
       return { status: 'unsupported', reason: 'invalid-pattern' }
     }
@@ -462,7 +471,9 @@ function createScalarValidator(node: ScalarPlanNode): (data: unknown) => boolean
   const hasNumberConstraints = node.minimum !== null || node.maximum !== null
     || node.exclusiveMinimum !== null || node.exclusiveMaximum !== null
   if (!node.customValidators && !hasStringConstraints && !hasNumberConstraints && node.constValue === NO_CONST && node.enumValues) {
-    return createEnumValidator(node.enumValues)
+    // 编译时过滤不满足 type 的成员，保留运行时的单枚举谓词。
+    const typeCheck = node.types ? createTypeUnionValidator(node.types) : null
+    return createEnumValidator(typeCheck ? node.enumValues.filter(typeCheck) : node.enumValues)
   }
   if (!node.customValidators && !hasStringConstraints && !hasNumberConstraints && node.constValue === NO_CONST && !node.enumValues && node.types) {
     return createTypeUnionValidator(node.types)
@@ -852,5 +863,8 @@ function containsDefault(value: unknown, seen: WeakSet<object>): boolean {
 
 function hasUnsupportedValidatorOption(ajvOptions: Record<string, unknown> | undefined): boolean {
   if (!ajvOptions) return false
+  const code = ajvOptions['code']
+  // 自定义正则引擎的行为由 AJV 负责，不能替换为原生 RegExp。
+  if (code && typeof code === 'object' && (code as Record<string, unknown>)['regExp'] !== undefined) return true
   return ajvOptions['coerceTypes'] !== false || ajvOptions['removeAdditional'] !== false
 }

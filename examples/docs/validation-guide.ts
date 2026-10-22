@@ -154,3 +154,21 @@ const asyncOk = await validateAsync(signupSchema, {
   username: 'new_user',
 })
 console.log('validation-guide.async.ok          =', (asyncOk as any).email)
+
+// Raw JSON Schema 约束合取，以及 AJV 正则选项的一致性。
+const rawValidator = new Validator({ smartCoerce: false })
+expect('enum also enforces type', !rawValidator.validate({ type: 'string', enum: [1] }, 1).valid)
+expect('both composition keywords must pass', !rawValidator.validate({
+  anyOf: [{ type: 'string' }], oneOf: [{ type: 'number' }],
+}, 'x').valid)
+expect('Unicode pattern counts code points', !rawValidator.validate({ type: 'string', pattern: '^..$' }, '😀').valid)
+try {
+  await rawValidator.validateAsync({ type: 'string', pattern: '^..$' }, '😀')
+  throw new Error('Expected Unicode pattern rejection')
+} catch (error) {
+  expect('async Unicode pattern rejects', error instanceof ValidationError)
+}
+rawValidator.clearCache()
+const codeUnitValidator = new Validator({ smartCoerce: false, unicodeRegExp: false })
+expect('explicit non-Unicode option is honored', codeUnitValidator.validate({ type: 'string', pattern: '^..$' }, '😀').valid)
+codeUnitValidator.clearCache()

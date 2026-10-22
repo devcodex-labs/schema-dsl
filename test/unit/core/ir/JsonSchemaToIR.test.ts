@@ -117,6 +117,22 @@ describe('JsonSchemaToIR', () => {
     })
   })
 
+  it.each([
+    { anyOf: [{ type: 'string' }], oneOf: [{ type: 'number' }] },
+    { allOf: [{ type: 'string' }], anyOf: [{ minLength: 2 }] },
+    { anyOf: [{ type: 'string' }], not: { const: 'blocked' } },
+    { oneOf: [{ type: 'string' }], if: { const: 'x' }, then: { minLength: 2 } },
+  ])('应该对不能完整表示的组合合取记录显式fallback: %j', schema => {
+    const ir = createJsonSchemaIR(schema)
+    expect(ir.graph.nodes[ir.root]).toMatchObject({
+      kind: 'fallback',
+      fallback: { reason: 'unsupported-schema', path: '' },
+    })
+    expect(ir.fallbacks).toEqual([
+      expect.objectContaining({ reason: 'unsupported-schema', message: expect.stringContaining('Multiple composition keywords') }),
+    ])
+  })
+
   it('resolves local refs, records cyclic refs and leaves remote refs as fallbacks', () => {
     const local = createJsonSchemaIR({
       type: 'object',

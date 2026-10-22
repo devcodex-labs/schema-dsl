@@ -292,6 +292,14 @@ class JsonSchemaIRBuilder {
   }
 
   private createCompositionNode(id: IRNodeId, source: Record<string, unknown>, path: IRPath): RuleIR {
+    const compositionKeys = [...COMPOSITION_KEYS, 'not', 'if'].filter(key => source[key] !== undefined)
+    if (compositionKeys.length > 1) {
+      // 不把多个合取约束投影成首个组合节点，交回 AJV 保留完整语义。
+      const fallback = this.addFallback(createIRFallback('unsupported-schema', path, {
+        message: `Multiple composition keywords require AJV validation: ${compositionKeys.join(', ')}.`,
+      }))
+      return { id, path, kind: 'fallback', fallback }
+    }
     const branches: CompositionBranchIR[] = []
     for (const key of COMPOSITION_KEYS) {
       const list = source[key]

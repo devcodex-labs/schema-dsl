@@ -113,6 +113,8 @@ const result = validator.validate(schema, data);
 
 > **注意**: `new Validator()` 会创建一个新的 Ajv 实例，有一定的初始化开销。建议在应用启动时创建并复用，避免在每次请求中创建。
 
+原始 JSON Schema 中的约束共同生效：声明 `enum` 后仍需满足 `type`，同时声明的 `anyOf` 与 `oneOf` 也必须都通过。`pattern` 遵循 AJV 默认的 Unicode 匹配（`unicodeRegExp: true`）；需要按 UTF-16 码元匹配时，在构造选项中设置 `unicodeRegExp: false`。自定义 `code.regExp` 引擎由 AJV 执行。这些规则同样适用于嵌套 Schema 和同步、异步校验。
+
 ### 3. 预编译验证（高性能）
 
 频繁验证同一 Schema 时使用：

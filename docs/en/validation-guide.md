@@ -113,6 +113,8 @@ const result = validator.validate(schema, data);
 
 > **Note**: `new Validator()` will create a new Ajv instance, which has a certain initialization overhead. It is recommended to create and reuse when the application starts to avoid creating it in every request.
 
+Raw JSON Schema constraints apply together: `type` still applies alongside `enum`, and simultaneous `anyOf` and `oneOf` must both pass. `pattern` follows AJV's default Unicode matching (`unicodeRegExp: true`); set `unicodeRegExp: false` in the constructor to match UTF-16 code units instead. A custom `code.regExp` engine is handled by AJV. These rules apply to nested schemas and synchronous/asynchronous validation as well.
+
 ### 3. Precompilation validation (high performance)
 
 Use when validating the same Schema frequently:

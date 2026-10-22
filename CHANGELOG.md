@@ -8,7 +8,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-No unreleased changes.
+### Fixed
+
+- Preserve `type` together with `enum` in the validation fast path.
+- Fall back to AJV for simultaneous composition keywords and mark unsupported conjunctions explicitly in the internal IR.
+- Match AJV's Unicode pattern semantics, honor `unicodeRegExp: false`, and defer custom `code.regExp` engines to AJV.
 
 ---
 
