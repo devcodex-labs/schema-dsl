@@ -39,6 +39,27 @@ export function verifyRegistry(receipt, metadata) {
   assert.ok(metadata.dist.attestations?.url, 'Registry provenance missing')
 }
 
+/** npm may accept an upload before making the version publicly visible. */
+export async function waitForRegistry(receipt, {
+  request = fetch,
+  sleep = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds)),
+  attempts = 121,
+  intervalMs = 5000,
+} = {}) {
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    const response = await request(`${registry}/${encodeURIComponent(receipt.name)}/${receipt.version}`, { headers: { 'cache-control': 'no-cache' } })
+    if (response.status === 404 && attempt < attempts - 1) {
+      await sleep(intervalMs)
+      continue
+    }
+    assert.ok(response.ok, `Registry HTTP ${response.status}; retry finalize only`)
+    const metadata = await response.json()
+    verifyRegistry(receipt, metadata)
+    return metadata
+  }
+  throw new Error('Registry visibility timeout; retry finalize only')
+}
+
 function verifiedReceipt() {
   const receipt = JSON.parse(readFileSync(receiptPath, 'utf8'))
   assert.equal(git('rev-parse', 'HEAD'), receipt.gitHead, 'Source commit changed')
@@ -47,7 +68,7 @@ function verifiedReceipt() {
   return receipt
 }
 
-async function main(command) {
+async function main(command, receiptDirectory = output) {
   mkdirSync(output, { recursive: true })
   if (command === 'create') {
     assert.ok(!existsSync(receiptPath), 'Artifact already exists; reuse it instead of repacking')
@@ -76,24 +97,15 @@ async function main(command) {
     const receipt = verifiedReceipt()
     save(join(output, 'published.json'), { schemaVersion: 'PublishedArtifactReceiptV1', publishedAt: new Date().toISOString(), publishExitCode: 0, registry, artifact: receipt })
   } else if (command === 'finalize') {
-    const published = JSON.parse(readFileSync(join(output, 'published.json'), 'utf8'))
+    const finalDirectory = resolve(receiptDirectory)
+    const published = JSON.parse(readFileSync(join(finalDirectory, 'published.json'), 'utf8'))
     const receipt = published.artifact
-    verifyBytes(receipt, readFileSync(join(output, receipt.filename)))
-    for (let attempt = 0; attempt < 8; attempt++) {
-      const response = await fetch(`${registry}/${encodeURIComponent(receipt.name)}/${receipt.version}`, { headers: { 'cache-control': 'no-cache' } })
-      if (response.status === 404 && attempt < 7) {
-        await new Promise(resolve => setTimeout(resolve, 5000))
-        continue
-      }
-      assert.ok(response.ok, `Registry HTTP ${response.status}; retry finalize only`)
-      const metadata = await response.json()
-      verifyRegistry(receipt, metadata)
-      save(join(output, 'registry.json'), metadata)
-      if (!metadata.gitHead) console.warn('Registry gitHead absent; provenance must identify the source commit')
-      console.log(`Registry identity accepted: ${receipt.name}@${receipt.version}`)
-      return
-    }
-  } else throw new Error('Usage: node scripts/release-artifact.mjs create|verify|published|finalize')
+    verifyBytes(receipt, readFileSync(join(finalDirectory, receipt.filename)))
+    const metadata = await waitForRegistry(receipt)
+    save(join(finalDirectory, 'registry.json'), metadata)
+    if (!metadata.gitHead) console.warn('Registry gitHead absent; provenance must identify the source commit')
+    console.log(`Registry identity accepted: ${receipt.name}@${receipt.version}`)
+  } else throw new Error('Usage: node scripts/release-artifact.mjs create|verify|published|finalize [receipt-directory]')
 }
 
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) await main(process.argv[2])
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) await main(process.argv[2], process.argv[3])

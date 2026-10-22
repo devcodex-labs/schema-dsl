@@ -55,6 +55,8 @@ npm run test:all:with-audit # Full library checks plus both dependency audits
 
 The website has its own `package-lock.json`. CI, Pages, and npm publication run its audit separately; a successful library audit does not cover website dependencies. `prepublishOnly` reuses `test:all:with-audit` so both audits block publication at moderate severity or above.
 
+After a successful npm upload, registry processing can delay public visibility. The release finalizer waits up to ten minutes. If that window expires, download the successful run's `release-receipts` artifact and retry only acceptance with `node scripts/release-artifact.mjs finalize /absolute/path/to/receipts`. This checks the saved tarball identity and registry metadata without uploading again; retain the original `published.json` receipt.
+
 ## Branch Strategy
 
 | Branch | Purpose |
