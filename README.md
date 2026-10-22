@@ -645,16 +645,19 @@ npm run build      # compile TypeScript
 npm run test       # run tests
 npm run typecheck  # type check
 npm run docs:linkcheck # check docs links
+npm run test:audit:website # audit the website's separate dependency lockfile
 ```
 
 To check a previously built package in a consumer using the selected Node version:
 
 ```bash
-npm run test:runtime -- /absolute/path/schema-dsl-3.0.4.tgz
-npm run test:runtime -- /absolute/path/schema-dsl-3.0.4.tgz --types
+npm run test:runtime -- /absolute/path/schema-dsl-3.0.5.tgz
+npm run test:runtime -- /absolute/path/schema-dsl-3.0.5.tgz --types
 ```
 
 The second command also checks ESM/CJS declarations with TypeScript 5.9.3 and Node.js 18 types. These checks install dependencies in a temporary consumer and remove it on completion.
+
+`npm run test:all:with-audit` checks both the library and website dependency trees. `prepublishOnly` reuses this gate before previewing the package; the website lockfile is audited independently even when its dependencies are not installed locally.
 
 Local documentation preview:
 

@@ -57,6 +57,11 @@ jobs:
       working-directory: website
       run: npm ci --engine-strict
 
+    - name: Website dependency audit
+      if: matrix.node-version == '24.x'
+      working-directory: website
+      run: npm run test:audit
+
     - name: Website build
       if: matrix.node-version == '24.x'
       working-directory: website
@@ -103,6 +108,9 @@ jobs:
 
     - name: Documentation links
       run: npm run docs:linkcheck
+
+    - name: Release artifact checks
+      run: node --test scripts/release-artifact.test.mjs
 
     - name: Performance documentation snapshot
       run: npm run docs:performance-check

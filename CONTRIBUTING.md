@@ -49,7 +49,11 @@ npm run typecheck   # TypeScript type checking
 npm run lint        # Run ESLint
 npm run test:version  # Verify version consistency
 npm run test:runtime -- /absolute/path/package.tgz # Verify a built package on the selected Node
+npm run test:audit:website # Audit the website's independent lockfile
+npm run test:all:with-audit # Full library checks plus both dependency audits
 ```
+
+The website has its own `package-lock.json`. CI, Pages, and npm publication run its audit separately; a successful library audit does not cover website dependencies. `prepublishOnly` reuses `test:all:with-audit` so both audits block publication at moderate severity or above.
 
 ## Branch Strategy
 

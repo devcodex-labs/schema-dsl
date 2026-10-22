@@ -6,7 +6,9 @@ All notable changes to this project will be documented in this file.
 
 ---
 
-## [Unreleased]
+## [3.0.5] - 2026-10-22
+
+See [the detailed release notes](./changelogs/v3.0.5.md).
 
 ### Fixed
 
@@ -15,6 +17,14 @@ All notable changes to this project will be documented in this file.
 - Match AJV's Unicode pattern semantics, honor `unicodeRegExp: false`, and defer custom `code.regExp` engines to AJV.
 - Refresh affected runtime and development dependencies, remove the cross-major YAML override, and migrate Vitest/coverage together to 4.1.12 with Vite 7.3.7.
 - Separate the Node.js 22.13+/24 development toolchain from packed runtime consumers, retaining the library's Node.js >=18.0.0 baseline.
+- Update the website's React Router dependencies to 7.18.4 within Rspress's existing compatible range.
+- Restore the website homepage hero layout and keep desktop/mobile layout regression coverage.
+
+### Changed
+
+- Audit the website's independent lockfile in CI, Pages, and publication; share the full root/website audit gate with `prepublishOnly` and propagate audit failures.
+- Add isolated npm-script regression checks for website audit success and failure propagation through the root, full-check, and prepublish entries.
+- Publish one verified tarball with recorded hashes, preserve the successful publication receipt, and check the registry artifact identity separately.
 
 ---
 

@@ -92,6 +92,10 @@ jobs:
         working-directory: website
         run: npm ci --engine-strict
 
+      - name: Website dependency audit
+        working-directory: website
+        run: npm run test:audit
+
       - name: Build documentation website
         working-directory: website
         run: npm run build
@@ -108,15 +112,33 @@ jobs:
         run: npm run bench:guard:smoke
 
       - name: Full dependency audit
-        # Dev dependency advisories must not block metadata-only publishes.
-        # Production audit remains covered by package scripts / CI.
-        continue-on-error: true
         run: npm run test:audit:all
 
       - name: Preview package contents
         run: npm pack --dry-run
 
+      - name: Verify release artifact checks
+        run: node --test scripts/release-artifact.test.mjs
+
+      - name: Create the exact release artifact
+        run: node scripts/release-artifact.mjs create
+
       - name: Publish to npm
-        run: npm publish --provenance --access public
+        run: |
+          node scripts/release-artifact.mjs verify
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          npm publish "./.tmp/release/schema-dsl-${PACKAGE_VERSION}.tgz" --ignore-scripts --provenance --access public
+          node scripts/release-artifact.mjs published
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Verify registry artifact identity
+        run: node scripts/release-artifact.mjs finalize
+
+      - name: Preserve release receipts
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-receipts
+          path: .tmp/release/
+          if-no-files-found: ignore

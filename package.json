@@ -1,6 +1,6 @@
 {
   "name": "schema-dsl",
-  "version": "3.0.4",
+  "version": "3.0.5",
   "description": "Progressive TypeScript schema DSL for concise, serializable field rules, validation, schema reuse, database/Markdown export, i18n, and runtime isolation",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -133,11 +133,12 @@
     "lint": "eslint src/**/*.ts",
     "test:audit": "npm audit --omit=dev --audit-level=moderate",
     "test:audit:all": "npm audit --audit-level=moderate",
+    "test:audit:website": "npm --prefix website run test:audit",
     "test:interop": "node scripts/verify-esm-cjs-type-registry.mjs",
     "test:package": "node scripts/verify-packed-consumer.mjs",
     "test:runtime": "node scripts/verify-runtime-consumer.mjs",
     "test:version": "node -e \"const p=require('./package.json');const {VERSION}=require('./dist/index.cjs');if(p.version!==VERSION)throw new Error('Version mismatch: '+p.version+' vs '+VERSION);console.log('Version OK:',p.version)\"",
-    "test:all:with-audit": "npm run lint && npm run build && npm run test:interop && npm run typecheck && npm run test:types && npm test && npm run test:version && npm run test:audit && npm run test:audit:all && npm run docs:performance-check && npm run docs:linkcheck && npm run test:package",
+    "test:all:with-audit": "npm run lint && npm run build && npm run test:interop && npm run typecheck && npm run test:types && npm test && npm run test:version && npm run test:audit && npm run test:audit:all && npm run test:audit:website && npm run docs:performance-check && npm run docs:linkcheck && npm run test:package",
     "bench:prepare": "npm run build --silent",
     "bench": "npm run bench:prepare && node test/benchmarks/library-comparison.js",
     "bench:zod": "npm run bench:prepare && node test/benchmarks/zod-scenario-matrix.js --json",
@@ -147,7 +148,7 @@
     "bench:cache": "npm run bench:prepare && node test/benchmarks/cache-stability.js --json",
     "bench:guard:smoke": "npm run bench:prepare && node scripts/check-performance-regression.mjs",
     "bench:guard:full": "npm run bench:prepare && node scripts/check-performance-regression.mjs --full",
-    "prepublishOnly": "npm run lint && npm run build && npm run test:interop && npm run typecheck && npm run test:types && npm test && npm run test:version && npm run test:audit && npm run docs:performance-check && npm run docs:linkcheck && npm run test:package && npm pack --dry-run"
+    "prepublishOnly": "npm run test:all:with-audit && npm pack --dry-run"
   },
   "keywords": [
     "schema",
