@@ -12,6 +12,8 @@ npm install schema-dsl
 >
 > The current TypeScript rewrite uses `Node.js >=18.0.0` as the only runtime baseline and no longer promises compatibility with older Node versions.
 
+Repository contributors use Node.js 24 LTS and `npm ci --engine-strict`; the complete development toolchain also runs on Node.js 22.13.0 and later Node.js 22 releases. CI tests Node.js 18/20 by installing the built package in separate runtime-only consumers. This distinction does not change application installation requirements.
+
 ---
 
 ## 5-minute Quick Start

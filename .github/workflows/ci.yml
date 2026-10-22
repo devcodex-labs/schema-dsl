@@ -13,8 +13,8 @@ jobs:
 
     strategy:
       matrix:
-        # engines: >=18.0.0  (removed 16.x; added 22.x current LTS)
-        node-version: [18.x, 20.x, 22.x]
+        # Development tools have a newer baseline than the published runtime.
+        node-version: [22.13.0, 22.x, 24.x]
 
     steps:
     - uses: actions/checkout@v7
@@ -26,7 +26,7 @@ jobs:
         cache: 'npm'
 
     - name: Install dependencies
-      run: npm ci
+      run: npm ci --engine-strict
 
     - name: Build
       run: npm run build
@@ -40,6 +40,9 @@ jobs:
     - name: Type contract tests
       run: npm run test:types
 
+    - name: Run tests
+      run: npm test
+
     - name: Run tests with coverage
       run: npm run test:coverage
 
@@ -49,25 +52,23 @@ jobs:
     - name: Examples run
       run: npm run examples:run
 
-    # Rspress/Rspack website builds require Node.js 20.19+ or 22.12+.
-    # Keep package validation on Node 18, but build the website on supported Node lines.
     - name: Install website dependencies
-      if: matrix.node-version != '18.x'
+      if: matrix.node-version == '24.x'
       working-directory: website
-      run: npm ci
+      run: npm ci --engine-strict
 
     - name: Website build
-      if: matrix.node-version != '18.x'
+      if: matrix.node-version == '24.x'
       working-directory: website
       run: npm run build
 
     - name: Install Playwright Chromium
-      if: matrix.node-version == '22.x'
+      if: matrix.node-version == '24.x'
       working-directory: website
       run: npx playwright install --with-deps chromium
 
     - name: Website accessibility smoke
-      if: matrix.node-version == '22.x'
+      if: matrix.node-version == '24.x'
       working-directory: website
       run: npm run test:a11y
 
@@ -88,14 +89,14 @@ jobs:
     steps:
     - uses: actions/checkout@v7
 
-    - name: Use Node.js 22
+    - name: Use Node.js 24
       uses: actions/setup-node@v6
       with:
-        node-version: 22.x
+        node-version: 24.x
         cache: 'npm'
 
     - name: Install dependencies
-      run: npm ci
+      run: npm ci --engine-strict
 
     - name: Build
       run: npm run build
@@ -114,4 +115,37 @@ jobs:
 
     - name: Performance regression smoke
       run: npm run bench:guard:smoke
+
+    - name: Pack the shared runtime candidate
+      run: |
+        mkdir -p .tmp/runtime-package
+        npm pack --ignore-scripts --pack-destination .tmp/runtime-package
+
+    - uses: actions/upload-artifact@v7
+      with:
+        name: runtime-package
+        path: .tmp/runtime-package/*.tgz
+        if-no-files-found: error
+
+  runtime-compatibility:
+    needs: release-boundary
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [18.0.0, 18.x, 20.x, 22.13.0, 22.x, 24.x]
+    steps:
+    - uses: actions/checkout@v7
+    - uses: actions/setup-node@v6
+      with:
+        node-version: ${{ matrix.node-version }}
+    - uses: actions/download-artifact@v8
+      with:
+        name: runtime-package
+        path: .tmp/runtime-package
+    - name: Verify the same tarball in a runtime-only consumer
+      run: node scripts/verify-runtime-consumer.mjs .tmp/runtime-package/*.tgz
+    - name: Verify public types with Node 18 declarations
+      if: matrix.node-version == '24.x'
+      run: node scripts/verify-runtime-consumer.mjs .tmp/runtime-package/*.tgz --types
 

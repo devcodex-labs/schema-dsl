@@ -636,12 +636,25 @@ try {
 
 ## 🛠️ Development
 
+Use Node.js 24 LTS for repository development (`.nvmrc`). The complete toolchain is tested on Node.js 22.13.0, the latest Node.js 22, and Node.js 24. Install it with `npm ci --engine-strict`.
+
+The published library keeps its Node.js >=18.0.0 runtime requirement. CI builds one tarball on Node.js 24 and verifies it in runtime-only consumers on Node.js 18.0.0, 18, 20, 22.13.0, 22, and 24. Node.js 18/20 compatibility does not imply upstream Node security maintenance.
+
 ```bash
 npm run build      # compile TypeScript
 npm run test       # run tests
 npm run typecheck  # type check
 npm run docs:linkcheck # check docs links
 ```
+
+To check a previously built package in a consumer using the selected Node version:
+
+```bash
+npm run test:runtime -- /absolute/path/schema-dsl-3.0.4.tgz
+npm run test:runtime -- /absolute/path/schema-dsl-3.0.4.tgz --types
+```
+
+The second command also checks ESM/CJS declarations with TypeScript 5.9.3 and Node.js 18 types. These checks install dependencies in a temporary consumer and remove it on completion.
 
 Local documentation preview:
 

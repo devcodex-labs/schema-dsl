@@ -14,6 +14,8 @@ npm install schema-dsl
 > 
 > 当前版本以 `Node.js >=18.0.0` 为唯一运行时基线，不再承诺旧 Node 版本兼容。
 
+仓库贡献开发使用 Node.js 24 LTS 和 `npm ci --engine-strict`；完整开发工具链也覆盖 Node.js 22.13.0 及后续 22.x 版本。CI 对 Node.js 18/20 采用独立消费者安装构建包的方式验证运行兼容性。这一区别不改变应用安装库时的要求。
+
 ---
 
 <a id="-5分钟快速入门"></a>

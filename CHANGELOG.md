@@ -13,6 +13,8 @@ All notable changes to this project will be documented in this file.
 - Preserve `type` together with `enum` in the validation fast path.
 - Fall back to AJV for simultaneous composition keywords and mark unsupported conjunctions explicitly in the internal IR.
 - Match AJV's Unicode pattern semantics, honor `unicodeRegExp: false`, and defer custom `code.regExp` engines to AJV.
+- Refresh affected runtime and development dependencies, remove the cross-major YAML override, and migrate Vitest/coverage together to 4.1.12 with Vite 7.3.7.
+- Separate the Node.js 22.13+/24 development toolchain from packed runtime consumers, retaining the library's Node.js >=18.0.0 baseline.
 
 ---
 

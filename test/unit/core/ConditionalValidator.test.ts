@@ -48,6 +48,40 @@ function createValidator(overrides: Partial<ConstructorParameters<typeof Conditi
 }
 
 describe('ConditionalValidator', () => {
+  it.each([
+    ['anyOf', [{ type: 'number' }, 'conditional'], 'bad', false],
+    ['anyOf', [{ type: 'number' }, 'conditional'], 7, true],
+    ['anyOf', [{ type: 'string' }, 'conditional'], 'bad', true],
+    ['oneOf', [{ type: 'number' }, 'conditional'], 'bad', false],
+    ['oneOf', [{ type: 'string' }, 'conditional'], 'bad', true],
+    ['oneOf', [{ type: 'number' }, 'conditional'], 7, false],
+    ['oneOf', [{ type: 'string' }, 'conditional'], 7, true],
+  ] as const)('应该保留条件%s分支匹配：%j / %j', (keyword, branches, data, valid) => {
+    const { validator } = createValidator()
+    const conditional: ConditionalInternalSchema = {
+      _isConditional: true,
+      conditions: [{ then: { type: 'number' } }],
+      _evaluateCondition: () => ({ result: true }),
+    }
+    const schema = { [keyword]: branches.map(branch => branch === 'conditional' ? conditional : branch) }
+    const result = validator.validateWithConditionals(schema, data, {})
+    expect(result.valid).toBe(valid)
+    if (!valid) expect(result.errors?.length).toBeGreaterThan(0)
+  })
+
+  it('应该在执行contains条件项前跳过结构不匹配的候选项', () => {
+    const { validator } = createValidator()
+    const schema: ConditionalInternalSchema = {
+      type: 'array', contains: {
+        type: 'string', _isConditional: true,
+        conditions: [{ then: { type: 'string' } }],
+        _evaluateCondition: () => ({ result: true }),
+      } as ConditionalInternalSchema,
+      allOf: [{ type: 'array' }],
+    }
+    expect(validator.validateWithConditionals(schema, [123, 'ok'], {}).valid).toBe(true)
+  })
+
   it('detects conditional schemas recursively', () => {
     const { validator } = createValidator()
 

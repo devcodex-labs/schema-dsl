@@ -18,8 +18,10 @@ We welcome all types of contributions, including:
 
 ### Prerequisites
 
-- **Node.js** >= 18.0.0
-- **pnpm** >= 8.0.0 (recommended package manager)
+- **Node.js 24 LTS** (see `.nvmrc`); the complete toolchain also supports Node.js 22.13.0 and later Node.js 22 releases.
+- **npm**, using the committed `package-lock.json` for reproducible installation.
+
+The published library retains Node.js >=18.0.0 support. Older Node versions run packed runtime-consumer checks in CI; they do not install the repository's development dependencies.
 
 ### Getting Started
 
@@ -29,7 +31,7 @@ git clone https://github.com/devcodex-labs/schema-dsl.git
 cd schema-dsl
 
 # Install dependencies
-pnpm install
+npm ci --engine-strict
 
 # Build the project
 npm run build
@@ -46,6 +48,7 @@ npm test            # Run all tests
 npm run typecheck   # TypeScript type checking
 npm run lint        # Run ESLint
 npm run test:version  # Verify version consistency
+npm run test:runtime -- /absolute/path/package.tgz # Verify a built package on the selected Node
 ```
 
 ## Branch Strategy
@@ -71,7 +74,7 @@ git checkout -b feat/your-feature-name
 Before submitting a PR, ensure:
 
 1. **Tests pass**: All existing and new tests pass.
-2. **Coverage**: Test coverage remains >= 80%.
+2. **Coverage**: Statements, lines, and functions remain >=95%, and branches >=85% (`npm run test:coverage`).
 3. **Linting**: No ESLint errors (warnings are acceptable).
 4. **Type checking**: No TypeScript errors.
 5. **Documentation**: Updated if the change affects public API.
