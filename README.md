@@ -12,11 +12,13 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-Native-3178C6.svg?style=flat-square)](https://www.typescriptlang.org/)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg?style=flat-square)](https://www.apache.org/licenses/LICENSE-2.0)
 
-[Quick Start](#quick-start) · [Documentation](https://devcodex-labs.github.io/schema-dsl) · [Feature Overview](#feature-overview) · [Examples](./examples)
+[Quick Start](#quick-start) · [Documentation](https://devcodex-labs.github.io/schema-dsl) · [Feature Overview](#feature-overview) · [Compared with Zod](#compared-with-zod) · [Examples](./examples)
 
 ```bash
 npm install schema-dsl
 ```
+
+If schema-dsl saves you time, a ⭐ on [GitHub](https://github.com/devcodex-labs/schema-dsl) helps others find it.
 
 </div>
 
@@ -391,6 +393,49 @@ const markdown = exporters.MarkdownExporter.export(productSchema, { title: 'Prod
 
 ---
 
+<a id="compared-with-zod"></a>
+
+## ⚖️ Compared with Zod
+
+The same schema in both libraries:
+
+```typescript
+// Zod
+import { z } from 'zod';
+
+const user = z.object({
+  username: z.string().min(3).max(32),
+  email:    z.string().email(),
+  age:      z.number().min(18).max(120).optional(),
+  tags:     z.array(z.string()),
+});
+
+const result = user.safeParse(input);
+```
+
+```typescript
+// schema-dsl
+import { s, validate } from 'schema-dsl/pure';
+
+const user = s({
+  username: 'string:3-32!',
+  email:    'email!',
+  age:      'number:18-120',
+  tags:     'array<string>!',
+});
+
+const result = validate(user, input);
+```
+
+Key differences:
+
+- **Serializable rules** — schema-dsl field rules are plain strings, so they can be stored as JSON or in a database and loaded at runtime; Zod schemas are code.
+- **Built-in exporters** — the same schema exports to MongoDB `$jsonSchema`, MySQL / PostgreSQL DDL, and Markdown field docs.
+- **Built-in i18n** — error messages ship in 5 built-in locales, switchable at runtime.
+- **Where Zod is stronger** — a much larger ecosystem and full static type inference via `z.infer`; schema-dsl offers lighter value-type extraction (`InferSchema` / `InferDslString`), while constraints stay runtime-only.
+
+---
+
 <a id="feature-overview"></a>
 
 ## 🗒️ Feature Overview
@@ -459,8 +504,8 @@ s({
   birthday:  'date!',           // YYYY-MM-DD
   createdAt: 'datetime!',       // ISO 8601
   userId:    'uuid!',           // UUID
-  phone:     'phone:cn!',       // Chinese mobile number
-  idCard:    'idCard:cn!',      // Chinese national ID
+  serverIp:  'ipv4!',           // IPv4 address
+  host:      'hostname!',       // hostname
   slug:      'slug:3-100!',     // URL-friendly string
 })
 ```
@@ -478,9 +523,9 @@ const schema = s({
 
   email: s('email!').label('email address'),
 
-  phone: s('string:11!')
-    .pattern(/^1[3-9]\d{9}$/)
-    .label('phone number'),
+  phone: s('string:8-16!')
+    .pattern(/^\+[1-9]\d{6,14}$/)
+    .label('phone number (E.164)'),
 
   recoveryEmail: s.email()
     .label('recovery email')
@@ -494,11 +539,11 @@ const schema = s({
 ```typescript
 // s.match — route to different rules based on a field value
 const contactSchema = s({
-  type:    'email|phone|wechat',
+  type:    'email|phone|username',
   contact: s.match('type', {
     email:  'email!',
-    phone:  'string:11!',
-    wechat: 'string:6-20!',
+    phone:  'string:8-16!',
+    username: 'string:3-32!',
   })
 });
 
