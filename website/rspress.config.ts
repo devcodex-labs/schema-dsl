@@ -274,6 +274,20 @@ const chineseNav = [
   }
 ];
 
+// Social share card (Open Graph / Twitter) metadata.
+// Image and URLs must be absolute so X, Slack, etc. can fetch them.
+const siteUrl = 'https://devcodex-labs.github.io/schema-dsl';
+const ogImage = `${siteUrl}/og-image.png`;
+const ogTitle = 'schema-dsl';
+const ogDescriptionEn =
+  'Progressive TypeScript schema DSL: one schema for validation, reuse, export, docs, and i18n.';
+const ogDescriptionZh = '渐进式 TypeScript Schema DSL，用简洁字段规则驱动验证、Schema 复用、导出、国际化和运行时隔离。';
+
+const isZhRoute = (route: { routePath: string; lang?: string }) =>
+  route.lang === 'zh' || route.routePath.startsWith('/zh/') || route.routePath === '/zh';
+const ogDescription = (route: { routePath: string; lang?: string }) =>
+  isZhRoute(route) ? ogDescriptionZh : ogDescriptionEn;
+
 export default defineConfig({
   // Keep the repository-root docs directory as the single source of truth.
   // Many docs link back to ../README.md, ../examples/, ../CHANGELOG.md, etc.,
@@ -288,6 +302,21 @@ export default defineConfig({
   globalStyles: path.join(__dirname, 'styles', 'schema-dsl.css'),
   description: 'Progressive TypeScript schema DSL for concise, serializable field rules, validation, schema reuse, multi-format export, i18n, and runtime isolation.',
   outDir: 'dist',
+  head: [
+    ['meta', { property: 'og:type', content: 'website' }],
+    ['meta', { property: 'og:site_name', content: 'schema-dsl' }],
+    ['meta', { property: 'og:title', content: ogTitle }],
+    (route) => ['meta', { property: 'og:description', content: ogDescription(route) }],
+    (route) => ['meta', { property: 'og:url', content: `${siteUrl}${route.routePath}` }],
+    ['meta', { property: 'og:image', content: ogImage }],
+    ['meta', { property: 'og:image:width', content: '1200' }],
+    ['meta', { property: 'og:image:height', content: '630' }],
+    ['meta', { property: 'og:image:alt', content: 'schema-dsl: Progressive TypeScript schema DSL' }],
+    ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
+    ['meta', { name: 'twitter:title', content: ogTitle }],
+    (route) => ['meta', { name: 'twitter:description', content: ogDescription(route) }],
+    ['meta', { name: 'twitter:image', content: ogImage }]
+  ],
   locales: [
     {
       lang: 'en',

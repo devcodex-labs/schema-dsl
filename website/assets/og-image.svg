@@ -1,0 +1,16 @@
+<!-- Social share card source for the docs site (1200x630).
+     Render to docs/public/og-image.png; see website/assets/README.md. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#0B1120"/>
+  <rect x="0" y="0" width="1200" height="8" fill="#F97316"/>
+  <g transform="translate(80 92) scale(0.27)">
+    <rect x="44" y="44" width="424" height="424" rx="96" fill="#111827" stroke="#1F2937" stroke-width="8"/>
+    <path d="M356 154H244C198 154 172 178 172 210C172 241 196 258 239 258H279C322 258 348 282 348 316C348 350 319 372 272 372H158" fill="none" stroke="#F97316" stroke-width="48" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text x="250" y="178" font-family="DejaVu Sans, Helvetica, Arial, sans-serif" font-size="84" font-weight="700" fill="#F9FAFB">schema-dsl</text>
+  <text x="80" y="290" font-family="DejaVu Sans, Helvetica, Arial, sans-serif" font-size="44" fill="#E5E7EB">Progressive TypeScript schema DSL</text>
+  <text x="80" y="348" font-family="DejaVu Sans, Helvetica, Arial, sans-serif" font-size="32" fill="#9CA3AF">One schema for validation, reuse, export, docs and i18n</text>
+  <rect x="80" y="400" width="1040" height="110" rx="18" fill="#111827" stroke="#1F2937" stroke-width="2"/>
+  <text x="116" y="469" font-family="DejaVu Sans Mono, Menlo, monospace" font-size="34" fill="#E5E7EB"><tspan fill="#F97316">s</tspan>({ email: <tspan fill="#86EFAC">'email!'</tspan>, age: <tspan fill="#86EFAC">'number:18-120'</tspan> })</text>
+  <text x="80" y="574" font-family="DejaVu Sans, Helvetica, Arial, sans-serif" font-size="26" fill="#6B7280">npm i schema-dsl  ·  devcodex-labs.github.io/schema-dsl</text>
+</svg>
